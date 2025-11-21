@@ -55,7 +55,7 @@
                                 <tbody>
                                     <t t-foreach="batch.picking_ids" t-as="picking">
                                         <tr>
-                                            <td><span t-esc="picking.sequence or '0'"/></td>
+                                            <td><span t-esc="picking_index"/></td>
                                             <td><span t-field="picking.name"/></td>
                                             <td>
                                                 <t t-if="picking.name">
