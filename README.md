@@ -31,56 +31,52 @@ Este módulo para Odoo 18 modifica la impresión de lotes de transferencias (sto
 
 ## Uso
 
-Una vez instalado el módulo, tendrás disponibles dos nuevos reportes en los lotes de transferencias:
+Una vez instalado el módulo, **el reporte estándar de lotes se reemplaza automáticamente** con la versión consolidada. No necesitas seleccionar ningún reporte especial.
 
-### 1. Batch Transfer Consolidated (Reporte Detallado)
+### Reporte Consolidado (Reemplazo Automático)
 
 Este reporte muestra:
-- Información del lote (nombre, responsable, estado, fecha)
-- Lista de transferencias incluidas en el lote
-- Tabla consolidada con columnas:
+
+**Página 1: Lista de Traslados**
+- Encabezado con nombre del lote y código de barras
+- Responsable y estado del lote
+- Tabla con todos los traslados incluidos (con códigos de barras individuales)
+
+**Página 2+: Productos Consolidados**
+- Productos agrupados por ruta (DESDE ubicación A ubicación destino)
+- Tabla consolidada con:
   - Producto (código y nombre)
-  - Lote/Serial
-  - Paquete (origen → destino)
-  - Ubicación origen
-  - Ubicación destino
   - Cantidad consolidada
-  - Unidad de medida
-  - Transferencias fuente
-- Resumen por producto (totales generales)
+  - Traslados que contribuyen a esa cantidad
+  - Código de barras del producto
+  - Paquete (origen → destino si aplica)
 
-### 2. Batch Transfer Summary (Resumen Simplificado)
-
-Este reporte muestra solo:
-- Información básica del lote
-- Tabla simple con:
-  - Código del producto
-  - Nombre del producto
-  - Cantidad total consolidada
-  - Unidad de medida
-
-## Cómo acceder a los reportes
+## Cómo acceder al reporte
 
 1. Ve a **Inventario > Operaciones > Lotes/Olas**
 2. Abre un lote de transferencias
 3. Haz clic en el botón **Imprimir**
-4. Selecciona:
-   - "Batch Transfer Consolidated" para el reporte detallado
-   - "Batch Transfer Summary" para el resumen simple
+4. El reporte consolidado se genera automáticamente (reemplaza el reporte estándar)
 
 ## Ejemplo de uso
 
 **Escenario**: Tienes un lote con 3 transferencias que incluyen:
-- Picking 1: Producto A (10 unidades) en Lote L001, de WH/Stock → WH/Output
-- Picking 2: Producto A (5 unidades) en Lote L001, de WH/Stock → WH/Output
-- Picking 3: Producto A (8 unidades) en Lote L002, de WH/Stock → WH/Output
+- CEN/PICK/00001: ROCHER (5 unidades), de CEN/Existencias → CEN/Salida
+- CEN/PICK/00022: ROCHER (5 unidades), de CEN/Existencias → CEN/Salida
+- CEN/PICK/00060: ROCHER (1 unidad), de CEN/Existencias → CEN/Salida
+- CEN/PICK/00059: ROCHER (1 unidad), de CEN/Existencias → CEN/Salida
 
-**Reporte Consolidado** mostrará:
-- Producto A | Lote L001 | - | WH/Stock | WH/Output | **15.00** | Unidades | Picking 1, Picking 2
-- Producto A | Lote L002 | - | WH/Stock | WH/Output | **8.00** | Unidades | Picking 3
+**Sin el módulo (reporte estándar):**
+Mostraría 4 líneas separadas con ROCHER (5.0, 5.0, 1.0, 1.0)
 
-**Resumen Simple** mostrará:
-- Producto A | **23.00** | Unidades
+**Con el módulo (reporte consolidado):**
+Muestra una sola línea:
+```
+DESDE CEN/Existencias
+A CEN/Salida
+
+[1244.90] ROCHER X3U.-434 (16)  |  12.00 Unidades  |  CEN/PICK/00001, CEN/PICK/00022, CEN/PICK/00060, CEN/PICK/00059
+```
 
 ## Estructura técnica
 

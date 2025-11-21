@@ -1,277 +1,153 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Report Action: Consolidated Batch Picking -->
-    <record id="action_report_picking_batch_consolidated" model="ir.actions.report">
-        <field name="name">Batch Transfer Consolidated</field>
-        <field name="model">stock.picking.batch</field>
-        <field name="report_type">qweb-pdf</field>
-        <field name="report_name">nakel_picking.report_picking_batch_consolidated</field>
-        <field name="report_file">nakel_picking.report_picking_batch_consolidated</field>
-        <field name="binding_model_id" ref="stock_picking_batch.model_stock_picking_batch"/>
-        <field name="binding_type">report</field>
-        <field name="print_report_name">'Batch-%s' % object.name</field>
-    </record>
+    <!--
+        Override the standard Batch Picking report template
+        to show consolidated quantities instead of individual lines
+    -->
 
-    <!-- Report Template: Consolidated View with Lot/Package/Location Details -->
-    <template id="report_picking_batch_consolidated">
-        <t t-call="web.html_container">
-            <t t-foreach="docs" t-as="batch">
-                <t t-call="web.external_layout">
-                    <div class="page">
-                        <!-- Header -->
-                        <div class="row">
-                            <div class="col-12">
-                                <h2>
-                                    <span>Batch Transfer: </span>
-                                    <span t-field="batch.name"/>
-                                </h2>
+    <!-- Replace the main report template -->
+    <template id="report_picking_batch" inherit_id="stock_picking_batch.report_picking_batch" name="Batch Picking Consolidated Report">
+        <!-- Replace the entire document body -->
+        <xpath expr="//t[@t-call='web.html_container']" position="replace">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="batch">
+                    <t t-call="web.external_layout">
+                        <div class="page">
+                            <!-- Header -->
+                            <div class="row">
+                                <div class="col-8">
+                                    <h2>
+                                        <span>Resumen: </span>
+                                        <span t-field="batch.name"/>
+                                    </h2>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <t t-if="batch.name">
+                                        <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', batch.name, 400, 100)" style="width:100%;height:40px" alt="Barcode"/>
+                                    </t>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Batch Info -->
-                        <div class="row mt-4 mb-4">
-                            <div class="col-6">
-                                <strong>Responsible:</strong>
-                                <span t-field="batch.user_id"/>
+                            <!-- Batch Info -->
+                            <div class="row mt-3 mb-3">
+                                <div class="col-6">
+                                    <strong>Responsable:</strong>
+                                    <span t-field="batch.user_id"/>
+                                </div>
+                                <div class="col-6">
+                                    <strong>Estado:</strong>
+                                    <span t-field="batch.state"/>
+                                </div>
                             </div>
-                            <div class="col-6">
-                                <strong>Status:</strong>
-                                <span t-field="batch.state"/>
-                            </div>
-                        </div>
 
-                        <div class="row mb-4">
-                            <div class="col-6">
-                                <strong>Scheduled Date:</strong>
-                                <span t-field="batch.scheduled_date"/>
-                            </div>
-                            <div class="col-6">
-                                <strong>Pickings in Batch:</strong>
-                                <span t-esc="len(batch.picking_ids)"/>
-                            </div>
-                        </div>
-
-                        <!-- Pickings List -->
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <strong>Transfer Orders:</strong>
-                                <span t-esc="', '.join(batch.picking_ids.mapped('name'))"/>
-                            </div>
-                        </div>
-
-                        <hr/>
-
-                        <!-- Consolidated Lines Table -->
-                        <h3 class="mt-4 mb-3">Consolidated Products</h3>
-
-                        <t t-set="consolidated_lines" t-value="batch._get_consolidated_lines()"/>
-
-                        <table class="table table-sm table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Lot/Serial</th>
-                                    <th>Package</th>
-                                    <th>From</th>
-                                    <th>To</th>
-                                    <th class="text-end">Quantity</th>
-                                    <th>Unit</th>
-                                    <th>Source Pickings</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <t t-foreach="consolidated_lines" t-as="line">
-                                    <tr>
-                                        <td>
-                                            <span t-if="line['product_code']" t-esc="'[%s] ' % line['product_code']"/>
-                                            <span t-esc="line['product_name']"/>
-                                        </td>
-                                        <td>
-                                            <span t-esc="line['lot_name']"/>
-                                        </td>
-                                        <td>
-                                            <span t-esc="line['package_name']"/>
-                                            <span t-if="line['result_package_name'] and line['result_package_name'] != line['package_name']">
-                                                → <span t-esc="line['result_package_name']"/>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <small t-esc="line['location_name']"/>
-                                        </td>
-                                        <td>
-                                            <small t-esc="line['location_dest_name']"/>
-                                        </td>
-                                        <td class="text-end">
-                                            <strong t-esc="'%.2f' % line['quantity']"/>
-                                        </td>
-                                        <td>
-                                            <span t-esc="line['uom_name']"/>
-                                        </td>
-                                        <td>
-                                            <small t-esc="', '.join(line['picking_names'])"/>
-                                        </td>
-                                    </tr>
-                                </t>
-                            </tbody>
-                        </table>
-
-                        <!-- Summary by Product Only (Optional) -->
-                        <div class="mt-5">
-                            <h3 class="mb-3">Summary by Product</h3>
-                            <t t-set="product_summary" t-value="batch._get_consolidated_lines_by_product()"/>
-
-                            <table class="table table-sm table-bordered" style="width: 60%;">
+                            <!-- Pickings Table Header -->
+                            <h4 class="mt-4 mb-2">Traslados en el Lote</h4>
+                            <table class="table table-sm table-bordered">
                                 <thead>
-                                    <tr>
-                                        <th>Product</th>
-                                        <th class="text-end">Total Quantity</th>
-                                        <th>Unit</th>
+                                    <tr style="background-color: #f8f9fa;">
+                                        <th style="width: 10%;">Secuencia</th>
+                                        <th style="width: 30%;">Trasladar</th>
+                                        <th style="width: 30%;">Código de barras</th>
+                                        <th style="width: 15%;">Estado</th>
+                                        <th style="width: 15%;">Fecha programada</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <t t-foreach="product_summary" t-as="summary">
+                                    <t t-foreach="batch.picking_ids" t-as="picking">
                                         <tr>
+                                            <td><span t-esc="picking.sequence or '0'"/></td>
+                                            <td><span t-field="picking.name"/></td>
                                             <td>
-                                                <span t-if="summary['product_code']" t-esc="'[%s] ' % summary['product_code']"/>
-                                                <strong t-esc="summary['product_name']"/>
+                                                <t t-if="picking.name">
+                                                    <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', picking.name, 400, 100)" style="width:100%;height:30px" alt="Barcode"/>
+                                                </t>
                                             </td>
-                                            <td class="text-end">
-                                                <strong t-esc="'%.2f' % summary['quantity']"/>
-                                            </td>
-                                            <td>
-                                                <span t-esc="summary['uom_name']"/>
-                                            </td>
+                                            <td><span t-field="picking.state"/></td>
+                                            <td><span t-field="picking.scheduled_date" t-options='{"widget": "datetime"}'/></td>
                                         </tr>
                                     </t>
                                 </tbody>
                             </table>
-                        </div>
 
-                        <!-- Footer Notes -->
-                        <div class="row mt-5">
-                            <div class="col-12">
-                                <p class="text-muted">
-                                    <small>
-                                        This report consolidates quantities from all transfers in the batch.
-                                        Products are grouped by lot, package, and location.
-                                    </small>
-                                </p>
-                            </div>
+                            <div style="page-break-before: always;"/>
+
+                            <!-- Consolidated Products Section -->
+                            <h3 class="mt-4 mb-3">Productos Consolidados</h3>
+
+                            <t t-set="consolidated_lines" t-value="batch._get_consolidated_lines()"/>
+
+                            <!-- Group by location route -->
+                            <t t-set="grouped_by_route" t-value="{}"/>
+                            <t t-foreach="consolidated_lines" t-as="line">
+                                <t t-set="route_key" t-value="'DESDE %s\nA %s' % (line['location_name'], line['location_dest_name'])"/>
+                                <t t-if="route_key not in grouped_by_route" t-set="grouped_by_route" t-value="{**grouped_by_route, route_key: []}"/>
+                                <t t-set="dummy" t-value="grouped_by_route[route_key].append(line)"/>
+                            </t>
+
+                            <t t-foreach="grouped_by_route.items()" t-as="route_item">
+                                <t t-set="route_label" t-value="route_item[0]"/>
+                                <t t-set="route_lines" t-value="route_item[1]"/>
+
+                                <div class="mt-4" style="background-color: #e9ecef; padding: 8px; margin-bottom: 10px;">
+                                    <strong style="white-space: pre-line;" t-esc="route_label"/>
+                                </div>
+
+                                <table class="table table-sm table-bordered">
+                                    <thead style="background-color: #f8f9fa;">
+                                        <tr>
+                                            <th style="width: 35%;">Producto</th>
+                                            <th style="width: 15%;">Cantidad</th>
+                                            <th style="width: 20%;">Trasladar</th>
+                                            <th style="width: 30%;">Código de barras del producto</th>
+                                            <th style="width: 15%;">Paquete</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="route_lines" t-as="line">
+                                            <tr>
+                                                <td>
+                                                    <t t-if="line['product_code']">
+                                                        <span t-esc="'[%s] ' % line['product_code']"/>
+                                                    </t>
+                                                    <span t-esc="line['product_name']"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <strong t-esc="'%.2f' % line['quantity']"/>
+                                                    <span t-esc="line['uom_name']"/>
+                                                </td>
+                                                <td>
+                                                    <small t-esc="', '.join(line['picking_names'])"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <t t-if="line['product'].barcode">
+                                                        <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', line['product'].barcode, 400, 100)" style="width:100%;height:30px" alt="Product Barcode"/>
+                                                    </t>
+                                                    <t t-else="">
+                                                        Código de barras del producto
+                                                    </t>
+                                                </td>
+                                                <td class="text-center">
+                                                    <t t-if="line['package_name']">
+                                                        <span t-esc="line['package_name']"/>
+                                                    </t>
+                                                    <t t-if="line['result_package_name'] and line['result_package_name'] != line['package_name']">
+                                                        <br/>→ <span t-esc="line['result_package_name']"/>
+                                                    </t>
+                                                    <t t-if="not line['package_name'] and not line['result_package_name']">
+                                                        ID del paquete →
+                                                    </t>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+
                         </div>
-                    </div>
+                    </t>
                 </t>
             </t>
-        </t>
-    </template>
-
-    <!-- Alternative: Simple Report (Product Summary Only) -->
-    <record id="action_report_picking_batch_simple" model="ir.actions.report">
-        <field name="name">Batch Transfer Summary</field>
-        <field name="model">stock.picking.batch</field>
-        <field name="report_type">qweb-pdf</field>
-        <field name="report_name">nakel_picking.report_picking_batch_simple</field>
-        <field name="report_file">nakel_picking.report_picking_batch_simple</field>
-        <field name="binding_model_id" ref="stock_picking_batch.model_stock_picking_batch"/>
-        <field name="binding_type">report</field>
-        <field name="print_report_name">'Batch-Summary-%s' % object.name</field>
-    </record>
-
-    <template id="report_picking_batch_simple">
-        <t t-call="web.html_container">
-            <t t-foreach="docs" t-as="batch">
-                <t t-call="web.external_layout">
-                    <div class="page">
-                        <!-- Header -->
-                        <div class="row">
-                            <div class="col-12">
-                                <h2>
-                                    <span>Batch Transfer Summary: </span>
-                                    <span t-field="batch.name"/>
-                                </h2>
-                            </div>
-                        </div>
-
-                        <!-- Batch Info -->
-                        <div class="row mt-4 mb-4">
-                            <div class="col-6">
-                                <strong>Responsible:</strong>
-                                <span t-field="batch.user_id"/>
-                            </div>
-                            <div class="col-6">
-                                <strong>Status:</strong>
-                                <span t-field="batch.state"/>
-                            </div>
-                        </div>
-
-                        <div class="row mb-4">
-                            <div class="col-6">
-                                <strong>Scheduled Date:</strong>
-                                <span t-field="batch.scheduled_date"/>
-                            </div>
-                            <div class="col-6">
-                                <strong>Pickings in Batch:</strong>
-                                <span t-esc="len(batch.picking_ids)"/>
-                            </div>
-                        </div>
-
-                        <!-- Pickings List -->
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <strong>Transfer Orders:</strong>
-                                <span t-esc="', '.join(batch.picking_ids.mapped('name'))"/>
-                            </div>
-                        </div>
-
-                        <hr/>
-
-                        <!-- Summary Table -->
-                        <h3 class="mt-4 mb-3">Product Summary</h3>
-
-                        <t t-set="product_summary" t-value="batch._get_consolidated_lines_by_product()"/>
-
-                        <table class="table table-sm table-bordered">
-                            <thead>
-                                <tr>
-                                    <th style="width: 15%;">Code</th>
-                                    <th style="width: 55%;">Product</th>
-                                    <th class="text-end" style="width: 15%;">Total Quantity</th>
-                                    <th style="width: 15%;">Unit</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <t t-foreach="product_summary" t-as="summary">
-                                    <tr>
-                                        <td>
-                                            <span t-esc="summary['product_code']"/>
-                                        </td>
-                                        <td>
-                                            <strong t-esc="summary['product_name']"/>
-                                        </td>
-                                        <td class="text-end">
-                                            <strong t-esc="'%.2f' % summary['quantity']"/>
-                                        </td>
-                                        <td>
-                                            <span t-esc="summary['uom_name']"/>
-                                        </td>
-                                    </tr>
-                                </t>
-                            </tbody>
-                        </table>
-
-                        <!-- Footer Notes -->
-                        <div class="row mt-5">
-                            <div class="col-12">
-                                <p class="text-muted">
-                                    <small>
-                                        This is a simplified summary showing total quantities by product only.
-                                    </small>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </t>
-            </t>
-        </t>
+        </xpath>
     </template>
 
 </odoo>
