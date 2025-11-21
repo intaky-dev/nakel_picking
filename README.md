@@ -22,12 +22,27 @@ Este módulo para Odoo 18 modifica la impresión de lotes de transferencias (sto
   - Preparación de múltiples órdenes
   - Picking multi ubicación
 
+## Requisitos
+
+Este módulo requiere la biblioteca Python `python-barcode` para generar códigos de barras en reportes PDF:
+
+```bash
+# Instalar usando pip (dentro del entorno virtual de Odoo)
+pip install python-barcode[images]
+
+# O instalar usando requirements.txt
+pip install -r requirements.txt
+```
+
+Si `python-barcode` no está disponible, el módulo intentará usar `reportlab` como alternativa (generalmente ya incluida en Odoo).
+
 ## Instalación
 
-1. Copia este módulo en tu directorio de addons de Odoo
-2. Actualiza la lista de aplicaciones
-3. Busca "Nakel Picking - Consolidated Batch Report"
-4. Instala el módulo
+1. Instala las dependencias Python requeridas (ver sección Requisitos)
+2. Copia este módulo en tu directorio de addons de Odoo
+3. Actualiza la lista de aplicaciones
+4. Busca "Nakel Picking - Consolidated Batch Report"
+5. Instala el módulo
 
 ## Uso
 
@@ -96,6 +111,14 @@ nakel_picking/
 **`_get_consolidated_lines()`**: Consolida líneas agrupando por producto, lote, paquete y ubicaciones.
 
 **`_get_consolidated_lines_by_product()`**: Consolida solo por producto (para resumen simple).
+
+**`_generate_barcode_image(value, barcode_type, width, height)`**: Genera imágenes de códigos de barras como base64 para embeber en reportes PDF. Esto resuelve problemas de renderización de códigos de barras en PDFs generados por wkhtmltopdf.
+
+## Solución a problemas de códigos de barras
+
+En versiones anteriores, los códigos de barras podían aparecer como pequeños iconos o no renderizarse correctamente en los PDFs. Esto se debía a que wkhtmltopdf (el motor de renderizado de PDFs de Odoo) tenía problemas accediendo a la URL `/report/barcode/`.
+
+**Solución implementada**: Los códigos de barras ahora se generan como imágenes base64 embebidas directamente en el HTML del reporte, garantizando su correcta visualización en PDFs sin depender de URLs externas.
 
 ## Licencia
 

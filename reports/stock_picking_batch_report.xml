@@ -23,7 +23,7 @@
                                 </div>
                                 <div class="col-4 text-end">
                                     <t t-if="batch.name">
-                                        <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', batch.name, 400, 100)" style="width:100%;height:40px" alt="Barcode"/>
+                                        <img t-att-src="batch._generate_barcode_image(batch.name, 'Code128', 600, 100)" style="width:100%;height:40px" alt="Barcode"/>
                                     </t>
                                 </div>
                             </div>
@@ -59,7 +59,7 @@
                                             <td><span t-field="picking.name"/></td>
                                             <td>
                                                 <t t-if="picking.name">
-                                                    <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', picking.name, 400, 100)" style="width:100%;height:30px" alt="Barcode"/>
+                                                    <img t-att-src="batch._generate_barcode_image(picking.name, 'Code128', 600, 100)" style="width:100%;height:30px" alt="Barcode"/>
                                                 </t>
                                             </td>
                                             <td><span t-field="picking.state"/></td>
@@ -120,7 +120,7 @@
                                                 </td>
                                                 <td class="text-center">
                                                     <t t-if="line['product'].barcode">
-                                                        <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', line['product'].barcode, 400, 100)" style="width:100%;height:30px" alt="Product Barcode"/>
+                                                        <img t-att-src="batch._generate_barcode_image(line['product'].barcode, 'Code128', 600, 100)" style="width:100%;height:30px" alt="Product Barcode"/>
                                                     </t>
                                                     <t t-else="">
                                                         <span style="color: #999;">-</span>

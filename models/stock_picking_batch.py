@@ -2,6 +2,8 @@
 
 from odoo import models, fields, api
 from collections import defaultdict
+import base64
+import io
 
 
 class StockPickingBatch(models.Model):
@@ -136,3 +138,72 @@ class StockPickingBatch(models.Model):
         )
 
         return result
+
+    def _generate_barcode_image(self, value, barcode_type='Code128', width=600, height=100):
+        """
+        Generate a barcode image as base64 string for embedding in PDF reports.
+
+        :param value: The value to encode in the barcode
+        :param barcode_type: Type of barcode (default: Code128)
+        :param width: Width in pixels
+        :param height: Height in pixels
+        :return: base64 encoded image string with data URI prefix
+        """
+        if not value:
+            return ''
+
+        try:
+            # Try using python-barcode library
+            import barcode
+            from barcode.writer import ImageWriter
+
+            # Create barcode instance
+            barcode_class = barcode.get_barcode_class(barcode_type.lower())
+            barcode_instance = barcode_class(str(value), writer=ImageWriter())
+
+            # Generate barcode to BytesIO buffer
+            buffer = io.BytesIO()
+            barcode_instance.write(buffer, options={
+                'module_width': 0.3,
+                'module_height': 10.0,
+                'quiet_zone': 2.0,
+                'font_size': 10,
+                'text_distance': 3.0,
+            })
+
+            # Get image data and encode to base64
+            buffer.seek(0)
+            barcode_image = buffer.read()
+
+            if barcode_image:
+                # Convert to base64 with data URI
+                return 'data:image/png;base64,' + base64.b64encode(barcode_image).decode('utf-8')
+
+        except ImportError:
+            # If python-barcode is not available, try reportlab
+            try:
+                from reportlab.graphics.barcode import code128
+                from reportlab.lib.units import mm
+                from reportlab.graphics import renderPM
+
+                # Create barcode
+                barcode_obj = code128.Code128(str(value), barHeight=15*mm, barWidth=0.8)
+
+                # Render to image
+                barcode_image = renderPM.drawToString(barcode_obj, fmt='PNG')
+
+                if barcode_image:
+                    return 'data:image/png;base64,' + base64.b64encode(barcode_image).decode('utf-8')
+
+            except Exception as e:
+                import logging
+                _logger = logging.getLogger(__name__)
+                _logger.warning(f'Error generating barcode with reportlab for value {value}: {str(e)}')
+
+        except Exception as e:
+            # Log the error but don't break the report
+            import logging
+            _logger = logging.getLogger(__name__)
+            _logger.warning(f'Error generating barcode for value {value}: {str(e)}')
+
+        return ''

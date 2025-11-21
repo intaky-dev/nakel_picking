@@ -1,5 +1,36 @@
 # Instrucciones de Actualización del Módulo
 
+## 🆕 Versión 18.0.1.1.0 - Corrección de códigos de barras
+
+### Cambios en esta versión
+
+✅ **Códigos de barras corregidos**: Los códigos de barras ahora se generan correctamente en reportes PDF usando imágenes base64 embebidas
+
+✅ **Nueva dependencia**: Se requiere la biblioteca `python-barcode[images]`
+
+### Pasos para actualizar a la versión 18.0.1.1.0
+
+1. **Instalar dependencia Python** (en el entorno de Odoo):
+   ```bash
+   pip install python-barcode[images]
+   # O usando el archivo requirements.txt del módulo
+   pip install -r requirements.txt
+   ```
+
+2. **Actualizar el módulo**:
+   - Sigue las instrucciones de actualización más abajo (Opción 1, 2 o 3)
+
+3. **Verificar códigos de barras**:
+   - Genera un reporte de lote en PDF
+   - Verifica que los códigos de barras aparezcan correctamente (no como iconos pequeños)
+   - Los códigos de barras deben ser escaneables
+
+### ¿Qué problema resuelve esta actualización?
+
+Anteriormente, los códigos de barras aparecían como pequeños iconos (🔲) o no se renderizaban en los PDFs debido a problemas de wkhtmltopdf con URLs relativas. Ahora se embeben directamente como imágenes base64.
+
+---
+
 ## ⚠️ IMPORTANTE: El módulo fue modificado
 
 El módulo ahora **reemplaza automáticamente** el reporte estándar de lotes en lugar de crear reportes adicionales.
